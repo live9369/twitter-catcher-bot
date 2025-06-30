@@ -40,6 +40,12 @@ class TwitterCatcher {
         return this._request(url, "POST", taskData);
     }
 
+    // 封装的任务编辑方法
+    _edit(taskData) {
+        const url = this.baseUrl + "/edit-task";
+        return this._request(url, "POST", taskData);
+    }
+
     // 封装的任务删除方法
     _del(taskId) {
         const url = this.baseUrl + "/delete-task";
