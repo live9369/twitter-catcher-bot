@@ -7,6 +7,13 @@ dotenv.config();
 const token = process.env.BOT_TOKEN;
 const bot = new TelegramBot(token, {polling: true});
 
+// Markdown 特殊字符转义函数
+function escapeMarkdown(text) {
+    if (!text) return text;
+    // 不转义反引号，因为我们需要它们来显示代码格式
+    return text.toString().replace(/([_*[\]()~>#+=|{}.!-])/g, '\\$1');
+}
+
 // 初始化 TwitterCatcher 和 Handle
 const catcher = new TwitterCatcher(process.env.TWITTER_CATCHER_API_KEY);
 const handlers = new Map(); // 为每个 chatId 创建独立的 handler
@@ -161,7 +168,9 @@ bot.onText(/\/list/, async (msg) => {
         
         list.forEach((task, index) => {
             const status = task.running == 0 ? '⏸️ 已停止' : '▶️ 运行中';
-            message += `${index + 1}. [@${task.user}](https://x.com/${task.user}) - ${status}\n`;
+            // 对用户名进行转义，防止 Markdown 解析错误
+            const escapedUser = escapeMarkdown(task.user);
+            message += `${index + 1}. [@${escapedUser}](https://x.com/${task.user}) - ${status}\n`;
         });
         
         message += `\n💡 使用 /query <用户名> 查看详细信息`;
@@ -188,7 +197,9 @@ bot.onText(/\/query (.+)/, async (msg, match) => {
         const result = await handler.handle_query(userName);
         
         if (result.includes('已找到')) {
-            await bot.sendMessage(chatId, `🔍 ${result}`, { parse_mode: 'Markdown' });
+            // 对 result 中的特殊字符进行转义，防止 Telegram Markdown 解析错误
+            const escapedResult = escapeMarkdown(result);
+            await bot.sendMessage(chatId, `🔍 ${escapedResult}`, { parse_mode: 'Markdown' });
         } else {
             await bot.sendMessage(chatId, `❌ ${result}`);
         }
@@ -225,7 +236,9 @@ bot.onText(/\/addkey (.+)/, async (msg, match) => {
         const handler = getHandler(chatId);
         const result = await handler.handle_addKey(userName, keywords);
         
-        await bot.sendMessage(chatId, result, { parse_mode: 'Markdown' });
+        // 对 result 中的特殊字符进行转义，防止 Telegram Markdown 解析错误
+        const escapedResult = escapeMarkdown(result);
+        await bot.sendMessage(chatId, escapedResult, { parse_mode: 'Markdown' });
     } catch (error) {
         await handleError(chatId, error, 'add keywords');
     }
@@ -260,7 +273,9 @@ bot.onText(/\/delkey (.+)/, async (msg, match) => {
         const result = await handler.handle_delKey(userName, keywords);
         
         if (result.includes('成功')) {
-            await bot.sendMessage(chatId, `✅ ${result}`, { parse_mode: 'Markdown' });
+            // 对 result 中的特殊字符进行转义，防止 Telegram Markdown 解析错误
+            const escapedResult = escapeMarkdown(result);
+            await bot.sendMessage(chatId, `✅ ${escapedResult}`, { parse_mode: 'Markdown' });
         } else if (result.includes('未找到')) {
             await bot.sendMessage(chatId, `❌ ${result}`);
         } else {
@@ -290,10 +305,14 @@ bot.onText(/\/addkeyall (.+)/, async (msg, match) => {
         if (result && result.success) {
             let message = `✅ 批量添加关键词完成！\n`;
             message += `📊 总用户数: ${result.total}\n`;
-            message += `🔔 关键词: \`${keywords}\`\n\n`;
+            // 对关键词进行转义，防止 Markdown 解析错误
+            const escapedKeywords = escapeMarkdown(keywords);
+            message += `🔔 关键词: \`${escapedKeywords}\`\n\n`;
             message += `📋 详细结果:\n`;
             result.results.forEach((res, index) => {
-                message += `${index + 1}. ${res}\n`;
+                // 对每条结果进行转义
+                const escapedRes = escapeMarkdown(res);
+                message += `${index + 1}. ${escapedRes}\n`;
             });
             
             await bot.sendMessage(chatId, message, { parse_mode: 'Markdown' });
