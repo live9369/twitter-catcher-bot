@@ -46,7 +46,7 @@ class Handle {
                 "isRegex": false
             },
             "notification": "telegram",
-            "chatId": this.chatId,
+            "chatId": this.chatId.toString(),
             "start": true
         }
         return this.tc._add(taskData)
